@@ -6,8 +6,15 @@ project(ALTAIR_VM_PEDANTIC
 
 add_library(altair_vm_pedantic SHARED
         src/vm.h
-
-        src/vm.c src/virtual_machine.h src/processor.h src/physical_memory.h src/virtual_machine.c src/physical_memory.c src/processor.c)
+        src/virtual_machine.h
+        src/physical_memory.h
+        src/processor.h
+        src/instruction.h
+        src/vm.c
+        src/virtual_machine.c
+        src/physical_memory.c
+        src/processor.c
+        src/instruction.c)
 
 set_target_properties(altair_vm_pedantic PROPERTIES PREFIX "")
 target_link_libraries(altair_vm_pedantic PRIVATE altair_vm_base)

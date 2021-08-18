@@ -1,3 +1,4 @@
+#include <string.h>
 #include "vm.h"
 
 ArResult arCreateVirtualMachine(ArVirtualMachine* virtual_machine, const ArVirtualMachineCreateInfo* info) {
@@ -64,11 +65,13 @@ ArResult arCreateProcessor(
         return result;
     }
 
+    memcpy((*processor)->isram, info->pBootCode, info->bootCodeSize * sizeof(uint32_t));
+    memcpy(virtual_machine->rom->memory, info->pBootCode, info->bootCodeSize * sizeof(uint32_t));
+
     result = virtual_machine_attach_processor(virtual_machine, *processor);
     if(result != AR_SUCCESS) {
         return result;
     }
-
 
     return AR_SUCCESS;
 }
@@ -94,7 +97,6 @@ void arGetProcessorMemoryInfo(
     output->isram  = processor->isram;
     output->cache  = processor->cache;
     output->ireg   = processor->ireg;
-    // TODO: Vérifier pourquoi output->vreg est en uint64t
     output->vreg   = (uint64_t*) processor->vreg;
 }
 

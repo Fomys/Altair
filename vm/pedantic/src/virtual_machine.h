@@ -4,7 +4,8 @@
 #include <assert.h>
 #include <malloc.h>
 
-#include "base/vm.h"
+#include <base/vm.h>
+
 #include "processor.h"
 #include "physical_memory.h"
 
