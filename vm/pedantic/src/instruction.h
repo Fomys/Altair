@@ -7,7 +7,9 @@
 
 struct ArInstructionParameters {
     uint8_t size;
-    uint32_t immediate;
+    uint16_t small_immediate;
+    uint16_t medium_immediate;
+    uint32_t long_immediate;
     uint8_t reg_a;
     uint8_t reg_b;
     uint8_t reg_c;
@@ -16,44 +18,32 @@ struct ArInstructionParameters {
 };
 
 enum ArUnit {
+    AR_PROCESSOR_UNIT_ALU1 = 0,
+    AR_PROCESSOR_UNIT_ALU2 = 1,
+    AR_PROCESSOR_UNIT_ALU3 = 2,
+    AR_PROCESSOR_UNIT_ALU4 = 3,
+    AR_PROCESSOR_UNIT_CMP = 4,
+    AR_PROCESSOR_UNIT_VFPU = 5,
+    AR_PROCESSOR_UNIT_DMA = 6,
+    AR_PROCESSOR_UNIT_LSU1 = 7,
+    AR_PROCESSOR_UNIT_LSU2 = 8,
     AR_PROCESSOR_UNIT_UNKNOWN,
-    AR_PROCESSOR_UNIT_CMP,
-    AR_PROCESSOR_UNIT_VFPU,
-    AR_PROCESSOR_UNIT_DMA,
-    AR_PROCESSOR_UNIT_ALU1,
-    AR_PROCESSOR_UNIT_ALU2,
-    AR_PROCESSOR_UNIT_ALU3,
-    AR_PROCESSOR_UNIT_ALU4,
-    AR_PROCESSOR_UNIT_LSU1,
-    AR_PROCESSOR_UNIT_LSU2,
 };
 
 
 typedef struct ArInstruction_T {
     enum ArOpcode opcode;
     enum ArUnit unit;
+    uint8_t swt;
     struct ArInstructionParameters parameters;
 } ArInstruction_T;
 
-struct ArInstruction_T instruction_decode(uint32_t raw);
+struct ArInstruction_T instruction_decode(uint32_t raw, uint8_t instruction_id);
 
-void instruction_decode_00_00(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-void instruction_decode_00_01(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-void instruction_decode_00_10(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-void instruction_decode_00_11(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-void instruction_decode_01_00(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-void instruction_decode_01_01(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-void instruction_decode_01_10(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-void instruction_decode_01_11(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-void instruction_decode_10_00(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-void instruction_decode_10_01(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-void instruction_decode_10_10(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-void instruction_decode_10_11(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-void instruction_decode_11_00(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-void instruction_decode_11_01(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-void instruction_decode_11_10(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-void instruction_decode_11_11(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id);
-
-void print_instruction(struct ArInstruction_T * instructionT);
+void instruction_print(struct ArInstruction_T * instruction);
+void register_print(uint8_t reg);
+void vregister_print(uint8_t reg);
+void viregister_print(uint8_t reg, uint8_t id);
+void unit_print(enum ArUnit unit);
 
 #endif //ALTAIR_VM_INSTRUCTION_H

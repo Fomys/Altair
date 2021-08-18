@@ -7,18 +7,6 @@
 
 #include "instruction.h"
 
-enum ArProcessorStatus {
-    AR_PROCESSOR_STATUS_INIT,
-    AR_PROCESSOR_STATUS_FETCH,
-    AR_PROCESSOR_STATUS_DECODE,
-    AR_PROCESSOR_STATUS_STALL,
-};
-
-enum ArPRocessorMode {
-    TWO_WAYS_DECODE,
-    FOUR_WAYS_DECODE,
-};
-
 typedef struct ArProcessor_T {
     uint8_t dsram[AR_PROCESSOR_DSRAM_SIZE];
     uint8_t isram[AR_PROCESSOR_ISRAM_SIZE];
@@ -34,9 +22,7 @@ typedef struct ArProcessor_T {
     uint16_t br;
     uint16_t lr;
 
-    enum ArPRocessorMode mode;
-
-    enum ArProcessorStatus status;
+    uint32_t current_raw[4];
     struct ArInstruction_T current_instructions[4];
 } ArProcessor_T;
 
@@ -44,9 +30,12 @@ typedef struct ArProcessor_T {
 
 ArResult processor_alloc(struct ArProcessor_T ** processor);
 ArResult processor_initialize(struct ArProcessor_T * processor);
+void processor_print(struct ArProcessor_T* processor);
 
 ArResult processor_cycle(struct ArProcessor_T* processor);
 ArResult processor_fetch(struct ArProcessor_T* processor);
+ArResult processor_decode(struct ArProcessor_T* processor);
+ArResult processor_execute(struct ArProcessor_T* processor);
 
 void processor_free(struct ArProcessor_T * processor);
 

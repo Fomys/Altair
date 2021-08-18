@@ -2,1223 +2,1291 @@
 #include "instruction.h"
 
 
-void (*instruction_decode_functions[])(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id) = {
-        instruction_decode_00_00,
-        instruction_decode_10_00,
-        instruction_decode_01_00,
-        instruction_decode_11_00,
-
-        instruction_decode_00_10,
-        instruction_decode_10_10,
-        instruction_decode_01_10,
-        instruction_decode_11_10,
-
-        instruction_decode_00_01,
-        instruction_decode_10_01,
-        instruction_decode_01_01,
-        instruction_decode_11_01,
-
-
-        instruction_decode_00_11,
-        instruction_decode_10_11,
-        instruction_decode_01_11,
-        instruction_decode_11_11,
+enum ArUnit instruction_decode_unit[4][4] = {
+        AR_PROCESSOR_UNIT_CMP, AR_PROCESSOR_UNIT_DMA, AR_PROCESSOR_UNIT_ALU3, AR_PROCESSOR_UNIT_ALU4,
+        AR_PROCESSOR_UNIT_LSU1, AR_PROCESSOR_UNIT_LSU2, AR_PROCESSOR_UNIT_LSU1, AR_PROCESSOR_UNIT_LSU2,
+        AR_PROCESSOR_UNIT_ALU1, AR_PROCESSOR_UNIT_ALU2, AR_PROCESSOR_UNIT_ALU1, AR_PROCESSOR_UNIT_ALU2,
+        AR_PROCESSOR_UNIT_VFPU, AR_PROCESSOR_UNIT_VFPU, AR_PROCESSOR_UNIT_VFPU, AR_PROCESSOR_UNIT_VFPU
 };
 
-void instruction_decode_00_00(uint32_t raw, struct ArInstruction_T * instruction, uint8_t instruction_id) {
-    switch (BITS(raw, 4, 4)) {
-        case 0b0000:
-            instruction->opcode = AR_OPCODE_CMP;
-            break;
-        case 0b0100:
-            instruction->opcode = AR_OPCODE_FCMP;
-            break;
-        case 0b0101:
-            instruction->opcode = AR_OPCODE_DCMP;
-            break;
-        case 0b0110:
-            instruction->opcode = AR_OPCODE_FCMPI;
-            break;
-        case 0b0111:
-            instruction->opcode = AR_OPCODE_DCMPI;
-            break;
-        case 0b1000:
-            instruction->opcode = AR_OPCODE_ENDP;
-            break;
-        case 0b1001:
-            instruction->opcode = AR_OPCODE_RET;
-            break;
-        case 0b1010:
-            instruction->opcode = AR_OPCODE_INT;
-            break;
-        case 0b1011:
-            instruction->opcode = AR_OPCODE_RETI;
-            break;
-    }
-}
+enum ArUnit instruction_decode_unit_swt[8] = {
+        AR_PROCESSOR_UNIT_ALU2,
+        AR_PROCESSOR_UNIT_ALU2,
+        AR_PROCESSOR_UNIT_ALU4,
+        AR_PROCESSOR_UNIT_LSU2,
+        AR_PROCESSOR_UNIT_VFPU,
+        AR_PROCESSOR_UNIT_VFPU,
+        AR_PROCESSOR_UNIT_VFPU,
+        AR_PROCESSOR_UNIT_VFPU,
+};
 
-void instruction_decode_00_01(uint32_t raw, struct ArInstruction_T * instruction) {}
+enum ArOpcode instruction_decode_opcodes[9][64] = {
+        {
+                AR_OPCODE_ADD, AR_OPCODE_ADDI,AR_OPCODE_NOP, AR_OPCODE_MOVEI,
+                AR_OPCODE_SUB, AR_OPCODE_SUBI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_XOR, AR_OPCODE_XORI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_OR,AR_OPCODE_ORI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
 
-void instruction_decode_00_10(uint32_t raw, struct ArInstruction_T * instruction) {
-    instruction->parameters.immediate = BITS(raw, 10, 16);
-    switch (BITS(raw, 4, 4)) {
-        case 0b0000:
-            instruction->opcode = AR_OPCODE_BNE;
-            break;
-        case 0b0001:
-            instruction->opcode = AR_OPCODE_BEQ;
-            break;
-        case 0b0010:
-            instruction->opcode = AR_OPCODE_BL;
-            break;
-        case 0b0011:
-            instruction->opcode = AR_OPCODE_BLE;
-            break;
-        case 0b0100:
-            instruction->opcode = AR_OPCODE_BG;
-            break;
-        case 0b0101:
-            instruction->opcode = AR_OPCODE_BGE;
-            break;
-        case 0b0110:
-            instruction->opcode = AR_OPCODE_BLS;
-            break;
-        case 0b0111:
-            instruction->opcode = AR_OPCODE_BLES;
-            break;
-        case 0b1000:
-            instruction->opcode = AR_OPCODE_BGS;
-            break;
-        case 0b1001:
-            instruction->opcode = AR_OPCODE_BGES;
-            break;
-        case 0b1010:
-            instruction->opcode = AR_OPCODE_BRA;
-            break;
-        case 0b1011:
-            instruction->opcode = AR_OPCODE_JUMP;
-            break;
-        case 0b1100:
-            instruction->opcode = AR_OPCODE_JUMPBR;
-            break;
-        case 0b1101:
-            instruction->opcode = AR_OPCODE_CALL;
-            break;
-        case 0b1110:
-            instruction->opcode = AR_OPCODE_CALLBR;
-            break;
-    }
-}
+                AR_OPCODE_AND, AR_OPCODE_ANDI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_LSL, AR_OPCODE_LSLI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_ASR, AR_OPCODE_ASRI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_LSR,AR_OPCODE_LSRI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
 
-void instruction_decode_00_11(uint32_t raw, struct ArInstruction_T * instruction) {
-    instruction->opcode = AR_OPCODE_CMPI;
-    instruction->parameters.immediate = (BITS(raw, 4, 4) << 10) | BITS(raw, 10, 16);
-}
+                AR_OPCODE_MULS, AR_OPCODE_MULSI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_MULU, AR_OPCODE_MULUI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_DIVS, AR_OPCODE_DIVSI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_DIVU,AR_OPCODE_DIVUI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
 
-void instruction_decode_01_00(uint32_t raw, struct ArInstruction_T * instruction) {
-    switch (BITS(raw, 4, 4)) {
-        case 0b0000:
-            instruction->opcode = AR_OPCODE_ADD;
-            break;
-        case 0b0001:
-            instruction->opcode = AR_OPCODE_SUB;
-            break;
-        case 0b0010:
-            instruction->opcode = AR_OPCODE_XOR;
-            break;
-        case 0b0011:
-            instruction->opcode = AR_OPCODE_OR;
-            break;
-        case 0b0100:
-            instruction->opcode = AR_OPCODE_AND;
-            break;
-        case 0b0101:
-            instruction->opcode = AR_OPCODE_LSL;
-            break;
-        case 0b0110:
-            instruction->opcode = AR_OPCODE_ASR;
-            break;
-        case 0b0111:
-            instruction->opcode = AR_OPCODE_LSR;
-            break;
-        case 0b1000:
-            instruction->opcode = AR_OPCODE_MULS;
-            break;
-        case 0b1001:
-            instruction->opcode = AR_OPCODE_MULU;
-            break;
-        case 0b1010:
-            instruction->opcode = AR_OPCODE_DIVS;
-            break;
-        case 0b1011:
-            instruction->opcode = AR_OPCODE_DIVU;
-            break;
-        case 0b1100:
-            instruction->opcode = AR_OPCODE_REMS;
-            break;
-        case 0b1101:
-            instruction->opcode = AR_OPCODE_REMU;
-            break;
-    }
-}
+                AR_OPCODE_REMS,AR_OPCODE_REMSI, AR_OPCODE_MOVEINS, AR_OPCODE_MOVEI,
+                AR_OPCODE_REMU, AR_OPCODE_REMUI, AR_OPCODE_MOVECYC, AR_OPCODE_MOVEI,
+                AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEFR,AR_OPCODE_MOVEI,
+                AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEIR,AR_OPCODE_MOVEI,
+        },
+        {
+                AR_OPCODE_ADD, AR_OPCODE_ADDI,AR_OPCODE_NOP, AR_OPCODE_MOVEI,
+                AR_OPCODE_SUB, AR_OPCODE_SUBI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_XOR, AR_OPCODE_XORI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_OR,AR_OPCODE_ORI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
 
-void instruction_decode_01_01(uint32_t raw, struct ArInstruction_T * instruction) {
-    switch (BITS(raw, 4, 4)) {
-        case 0b0000:
-            instruction->opcode = AR_OPCODE_NOP;
-            break;
-        case 0b1100:
-            instruction->opcode = AR_OPCODE_MOVEINS;
-            break;
-        case 0b1101:
-            instruction->opcode = AR_OPCODE_MOVECYC;
-            break;
-        case 0b1110:
-            instruction->opcode = AR_OPCODE_MOVEFR;
-            break;
-        case 0b1111:
-            instruction->opcode = AR_OPCODE_MOVEIR;
-            break;
+                AR_OPCODE_AND, AR_OPCODE_ANDI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_LSL, AR_OPCODE_LSLI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_ASR, AR_OPCODE_ASRI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_LSR,AR_OPCODE_LSRI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
 
-    }
-}
+                AR_OPCODE_MULS, AR_OPCODE_MULSI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_MULU, AR_OPCODE_MULUI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_DIVS, AR_OPCODE_DIVSI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_DIVU,AR_OPCODE_DIVUI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
 
-void instruction_decode_01_10(uint32_t raw, struct ArInstruction_T * instruction) {
-    instruction->parameters.immediate = BITS(raw, 10, 9);
+                AR_OPCODE_REMS,AR_OPCODE_REMSI, AR_OPCODE_MOVEINS, AR_OPCODE_MOVEI,
+                AR_OPCODE_REMU, AR_OPCODE_REMUI, AR_OPCODE_MOVECYC, AR_OPCODE_MOVEI,
+                AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEFR,AR_OPCODE_MOVEI,
+                AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEIR,AR_OPCODE_MOVEI,
+        },
+        {
+                AR_OPCODE_ADD, AR_OPCODE_ADDI,AR_OPCODE_NOP, AR_OPCODE_MOVEI,
+                AR_OPCODE_SUB, AR_OPCODE_SUBI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_XOR, AR_OPCODE_XORI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_OR,AR_OPCODE_ORI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
 
-    switch (BITS(raw, 4, 4)) {
-        case 0b0000:
-            instruction->opcode = AR_OPCODE_ADDI;
-            break;
-        case 0b0001:
-            instruction->opcode = AR_OPCODE_SUBI;
-            break;
-        case 0b0010:
-            instruction->opcode = AR_OPCODE_XORI;
-            break;
-        case 0b0011:
-            instruction->opcode = AR_OPCODE_ORI;
-            break;
-        case 0b0100:
-            instruction->opcode = AR_OPCODE_ANDI;
-            break;
-        case 0b0101:
-            instruction->opcode = AR_OPCODE_LSLI;
-            break;
-        case 0b0110:
-            instruction->opcode = AR_OPCODE_ASRI;
-            break;
-        case 0b0111:
-            instruction->opcode = AR_OPCODE_LSRI;
-            break;
-        case 0b1000:
-            instruction->opcode = AR_OPCODE_MULSI;
-            break;
-        case 0b1001:
-            instruction->opcode = AR_OPCODE_MULUI;
-            break;
-        case 0b1010:
-            instruction->opcode = AR_OPCODE_DIVSI;
-            break;
-        case 0b1011:
-            instruction->opcode = AR_OPCODE_DIVUI;
-            break;
-        case 0b1100:
-            instruction->opcode = AR_OPCODE_REMSI;
-            break;
-        case 0b1101:
-            instruction->opcode = AR_OPCODE_REMUI;
-            break;
-    }
-}
+                AR_OPCODE_AND, AR_OPCODE_ANDI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_LSL, AR_OPCODE_LSLI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_ASR, AR_OPCODE_ASRI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_LSR,AR_OPCODE_LSRI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
 
-void instruction_decode_01_11(uint32_t raw, struct ArInstruction_T * instruction) {
-    instruction->opcode = AR_OPCODE_MOVEI;
-    instruction->parameters.immediate = (BITS(raw, 6, 4)) << 10 | BITS(raw, 10, 16) ;
-}
+                AR_OPCODE_MULS, AR_OPCODE_MULSI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_MULU, AR_OPCODE_MULUI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_DIVS, AR_OPCODE_DIVSI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_DIVU,AR_OPCODE_DIVUI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
 
-void instruction_decode_10_00(uint32_t raw, struct ArInstruction_T * instruction) {
-    instruction->parameters.immediate = BITS(raw, 10, 9);
-    switch (BITS(raw, 4, 4)) {
-        case 0b0000:
-            instruction->opcode = AR_OPCODE_LDM;
-            break;
-        case 0b0001:
-            instruction->opcode = AR_OPCODE_STM;
-            break;
-        case 0b0010:
-            instruction->opcode = AR_OPCODE_LDC;
-            break;
-        case 0b0011:
-            instruction->opcode = AR_OPCODE_STC;
-            break;
-        case 0b1000:
-            instruction->opcode = AR_OPCODE_LDMI;
-            break;
-        case 0b1001:
-            instruction->opcode = AR_OPCODE_STMI;
-            break;
-        case 0b1010:
-            instruction->opcode = AR_OPCODE_LDCI;
-            break;
-        case 0b1011:
-            instruction->opcode = AR_OPCODE_STCI;
-            break;
-        case 0b0100:
-            instruction->opcode = AR_OPCODE_LDMV;
-            break;
-        case 0b0101:
-            instruction->opcode = AR_OPCODE_STMV;
-            break;
-        case 0b0110:
-            instruction->opcode = AR_OPCODE_LDCV;
-            break;
-        case 0b0111:
-            instruction->opcode = AR_OPCODE_STCV;
-            break;
-        case 0b1100:
-            instruction->opcode = AR_OPCODE_LDMVI;
-            break;
-        case 0b1101:
-            instruction->opcode = AR_OPCODE_STMVI;
-            break;
-        case 0b1110:
-            instruction->opcode = AR_OPCODE_LDCVI;
-            break;
-        case 0b1111:
-            instruction->opcode = AR_OPCODE_STCVI;
-            break;
-    }
-}
+                AR_OPCODE_REMS,AR_OPCODE_REMSI, AR_OPCODE_MOVEINS, AR_OPCODE_MOVEI,
+                AR_OPCODE_REMU, AR_OPCODE_REMUI, AR_OPCODE_MOVECYC, AR_OPCODE_MOVEI,
+                AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEFR,AR_OPCODE_MOVEI,
+                AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEIR,AR_OPCODE_MOVEI,
+        },
+        {
+                AR_OPCODE_ADD, AR_OPCODE_ADDI,AR_OPCODE_NOP, AR_OPCODE_MOVEI,
+                AR_OPCODE_SUB, AR_OPCODE_SUBI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_XOR, AR_OPCODE_XORI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_OR,AR_OPCODE_ORI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
 
-void instruction_decode_10_01(uint32_t raw, struct ArInstruction_T * instruction) {}
+                AR_OPCODE_AND, AR_OPCODE_ANDI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_LSL, AR_OPCODE_LSLI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_ASR, AR_OPCODE_ASRI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_LSR,AR_OPCODE_LSRI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
 
-void instruction_decode_10_10(uint32_t raw, struct ArInstruction_T * instruction) {
-    instruction->parameters.immediate = BITS(raw, 10, 13) ;
-    switch (BITS(raw, 4, 4)) {
-        case 0b0000:
-            instruction->opcode = AR_OPCODE_LDMIL;
-            break;
-        case 0b0001:
-            instruction->opcode = AR_OPCODE_STMIL;
-            break;
-        case 0b0010:
-            instruction->opcode = AR_OPCODE_LDCIL;
-            break;
-        case 0b0011:
-            instruction->opcode = AR_OPCODE_STCIL;
-            break;
-        case 0b1000:
-            instruction->opcode = AR_OPCODE_PREFETCHI;
-            break;
-        case 0b1001:
-            instruction->opcode = AR_OPCODE_FLUSHI;
-            break;
-        case 0b1010:
-            instruction->opcode = AR_OPCODE_PREFETCH;
-            break;
-        case 0b1011:
-            instruction->opcode = AR_OPCODE_FLUSH;
-            break;
-        case 0b0100:
-            instruction->opcode = AR_OPCODE_LDMVIL;
-            break;
-        case 0b0101:
-            instruction->opcode = AR_OPCODE_STMVIL;
-            break;
-        case 0b0110:
-            instruction->opcode = AR_OPCODE_LDCVIL;
-            break;
-        case 0b0111:
-            instruction->opcode = AR_OPCODE_STCVIL;
-            break;
-    }
-}
+                AR_OPCODE_MULS, AR_OPCODE_MULSI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_MULU, AR_OPCODE_MULUI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_DIVS, AR_OPCODE_DIVSI,AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
+                AR_OPCODE_DIVU,AR_OPCODE_DIVUI, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEI,
 
-void instruction_decode_10_11(uint32_t raw, struct ArInstruction_T * instruction) {}
+                AR_OPCODE_REMS,AR_OPCODE_REMSI, AR_OPCODE_MOVEINS, AR_OPCODE_MOVEI,
+                AR_OPCODE_REMU, AR_OPCODE_REMUI, AR_OPCODE_MOVECYC, AR_OPCODE_MOVEI,
+                AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEFR,AR_OPCODE_MOVEI,
+                AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_MOVEIR,AR_OPCODE_MOVEI,
+        },
+        {
+                AR_OPCODE_CMP, AR_OPCODE_BNE, AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
+                AR_OPCODE_UNKNOWN, AR_OPCODE_BEQ, AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
+                AR_OPCODE_UNKNOWN, AR_OPCODE_BL,AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
+                AR_OPCODE_UNKNOWN, AR_OPCODE_BLE, AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
 
-void instruction_decode_11_00(uint32_t raw, struct ArInstruction_T * instruction) {
-    instruction->parameters.immediate = BITS(raw, 10, 9);
-    switch (BITS(raw, 4, 4)) {
-        case 0b0000:
-            instruction->opcode = AR_OPCODE_FADD;
-            break;
-        case 0b0001:
-            instruction->opcode = AR_OPCODE_FSUB;
-            break;
-        case 0b0010:
-            instruction->opcode = AR_OPCODE_FMUL;
-            break;
-        case 0b0011:
-            instruction->opcode = AR_OPCODE_FMULADD;
-            break;
-        case 0b0100:
-            instruction->opcode = AR_OPCODE_VFADD;
-            break;
-        case 0b0101:
-            instruction->opcode = AR_OPCODE_VFSUB;
-            break;
-        case 0b0110:
-            instruction->opcode = AR_OPCODE_VFMUL;
-            break;
-        case 0b0111:
-            instruction->opcode = AR_OPCODE_VFMULADD;
-            break;
-        case 0b1000:
-            instruction->opcode = AR_OPCODE_VFADDS;
-            break;
-        case 0b1001:
-            instruction->opcode = AR_OPCODE_VFSUBS;
-            break;
-        case 0b1010:
-            instruction->opcode = AR_OPCODE_VFMULS;
-            break;
-        case 0b1011:
-            instruction->opcode = AR_OPCODE_VFMULADDS;
-            break;
-        case 0b1100:
-            instruction->opcode = AR_OPCODE_FMULSUB;
-            break;
-        case 0b1101:
-            instruction->opcode = AR_OPCODE_VFMULSUB;
-            break;
-        case 0b1110:
-            instruction->opcode = AR_OPCODE_VFMULSUBS;
-            break;
-        case 0b1111:
-            instruction->opcode = AR_OPCODE_VFSHUFFLE;
-            break;
-    }
-}
+                AR_OPCODE_FCMP,AR_OPCODE_BG,AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
+                AR_OPCODE_DCMP,AR_OPCODE_BGE, AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
+                AR_OPCODE_FCMPI, AR_OPCODE_BLS, AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
+                AR_OPCODE_DCMPI,AR_OPCODE_BLES,AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
 
-void instruction_decode_11_01(uint32_t raw, struct ArInstruction_T * instruction) {
-    switch (BITS(raw, 4, 4)) {
-        case 0b0000:
-            instruction->opcode = AR_OPCODE_FDIV;
-            break;
-        case 0b0001:
-            instruction->opcode = AR_OPCODE_FSQRT;
-            break;
-        case 0b0100:
-            instruction->opcode = AR_OPCODE_FATAN;
-            break;
-        case 0b0101:
-            instruction->opcode = AR_OPCODE_FATAN2;
-            break;
-        case 0b0110:
-            instruction->opcode = AR_OPCODE_FEXP;
-            break;
-        case 0b1000:
-            instruction->opcode = AR_OPCODE_FSUM;
-            break;
-        case 0b1001:
-            instruction->opcode = AR_OPCODE_FIPR;
-            break;
-        case 0b1010:
-            instruction->opcode = AR_OPCODE_FSIN;
-            break;
-    }
-}
+                AR_OPCODE_ENDP, AR_OPCODE_BGS, AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
+                AR_OPCODE_RET,AR_OPCODE_BGES,AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
+                AR_OPCODE_INT,AR_OPCODE_BRA,AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
+                AR_OPCODE_RETI,AR_OPCODE_JUMP,AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
 
-void instruction_decode_11_10(uint32_t raw, struct ArInstruction_T * instruction) {
-    instruction->parameters.immediate = BITS(raw, 10, 13);
-    switch (BITS(raw, 4, 4)) {
-        case 0b0000:
-            instruction->opcode = AR_OPCODE_FMOVE;
-            break;
-        case 0b0001:
-            instruction->opcode = AR_OPCODE_VFMOVE;
-            break;
-        case 0b0010:
-            instruction->opcode = AR_OPCODE_FMOVEI;
-            break;
-        case 0b0011:
-            instruction->opcode = AR_OPCODE_VFMOVEI;
-            break;
-        case 0b0100:
-            instruction->opcode = AR_OPCODE_FNEG;
-            break;
-        case 0b0101:
-            instruction->opcode = AR_OPCODE_FABS;
-            break;
-        case 0b0110:
-            instruction->opcode = AR_OPCODE_VFNEG;
-            break;
-        case 0b0111:
-            instruction->opcode = AR_OPCODE_VFABS;
-            break;
-        case 0b1000:
-            instruction->opcode = AR_OPCODE_VFTOH;
-            break;
-        case 0b1001:
-            instruction->opcode = AR_OPCODE_VHTOF;
-            break;
-        case 0b1010:
-            instruction->opcode = AR_OPCODE_VFTOI;
-            break;
-        case 0b1011:
-            instruction->opcode = AR_OPCODE_VITOF;
-            break;
-        case 0b1100:
-            instruction->opcode = AR_OPCODE_VFTOD;
-            break;
-        case 0b1101:
-            instruction->opcode = AR_OPCODE_VDTOF;
-            break;
-        case 0b1110:
-            instruction->opcode = AR_OPCODE_FMIN;
-            break;
-        case 0b1111:
-            instruction->opcode = AR_OPCODE_FMAX;
-            break;
-    }
-}
+                AR_OPCODE_UNKNOWN, AR_OPCODE_JUMPBR,AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
+                AR_OPCODE_UNKNOWN,AR_OPCODE_CALL,AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
+                AR_OPCODE_UNKNOWN, AR_OPCODE_CALLBR,AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
+                AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_CMPI,
+        },
+        {
+                AR_OPCODE_FADD,AR_OPCODE_FMOVE, AR_OPCODE_FDIV,AR_OPCODE_DMOVEI,
+                AR_OPCODE_FSUB,AR_OPCODE_VFMOVE,AR_OPCODE_FSQRT, AR_OPCODE_DADD,
+                AR_OPCODE_FMUL,AR_OPCODE_FMOVEI,AR_OPCODE_UNKNOWN, AR_OPCODE_DSUB,
+                AR_OPCODE_FMULADD, AR_OPCODE_VFMOVEI, AR_OPCODE_UNKNOWN, AR_OPCODE_DMUL,
 
-void instruction_decode_11_11(uint32_t raw, struct ArInstruction_T * instruction) {
-    instruction->parameters.immediate = BITS(raw, 10, 13);
-    switch (BITS(raw, 4, 4)) {
-        case 0b0000:
-            instruction->opcode = AR_OPCODE_DMOVEI;
-            break;
-        case 0b0001:
-            instruction->opcode = AR_OPCODE_DADD;
-            break;
-        case 0b0010:
-            instruction->opcode = AR_OPCODE_DSUB;
-            break;
-        case 0b0011:
-            instruction->opcode = AR_OPCODE_DMUL;
-            break;
-        case 0b0100:
-            instruction->opcode = AR_OPCODE_DABS;
-            break;
-        case 0b0101:
-            instruction->opcode = AR_OPCODE_DNEG;
-            break;
-        case 0b0110:
-            instruction->opcode = AR_OPCODE_DMIN;
-            break;
-        case 0b0111:
-            instruction->opcode = AR_OPCODE_DMAX;
-            break;
-        case 0b1000:
-            instruction->opcode = AR_OPCODE_DDIV;
-            break;
-        case 0b1001:
-            instruction->opcode = AR_OPCODE_DSQRT;
-            break;
-        case 0b1010:
-            instruction->opcode = AR_OPCODE_DSIN;
-            break;
-    }
-}
+                AR_OPCODE_VFADD, AR_OPCODE_FNEG,AR_OPCODE_FATAN, AR_OPCODE_DABS,
+                AR_OPCODE_VFSUB, AR_OPCODE_FABS,AR_OPCODE_FATAN2,AR_OPCODE_DNEG,
+                AR_OPCODE_VFMUL, AR_OPCODE_VFNEG, AR_OPCODE_FEXP,AR_OPCODE_DMIN,
+                AR_OPCODE_VFMULADD, AR_OPCODE_VFABS, AR_OPCODE_UNKNOWN, AR_OPCODE_DMAX,
 
+                AR_OPCODE_VFADDS, AR_OPCODE_VFTOH, AR_OPCODE_FSUM,AR_OPCODE_DDIV,
+                AR_OPCODE_VFSUBS, AR_OPCODE_VHTOF, AR_OPCODE_FIPR,AR_OPCODE_DSQRT,
+                AR_OPCODE_VFMULS, AR_OPCODE_VFTOI,AR_OPCODE_FSIN,AR_OPCODE_DSIN,
+                AR_OPCODE_VFMULADDS, AR_OPCODE_VITOF, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
 
-enum ArUnit instruction_get_unit(enum ArOpcode opcode, uint8_t instruction_id) {
-    switch (opcode) {
-        case AR_OPCODE_ADD:
-        case AR_OPCODE_SUB:
-        case AR_OPCODE_XOR:
-        case AR_OPCODE_OR:
-        case AR_OPCODE_AND:
-        case AR_OPCODE_LSL:
-        case AR_OPCODE_ASR:
-        case AR_OPCODE_LSR:
-        case AR_OPCODE_MULS:
-        case AR_OPCODE_MULU:
-        case AR_OPCODE_DIVS:
-        case AR_OPCODE_DIVU:
-        case AR_OPCODE_REMS:
-        case AR_OPCODE_REMU:
-        case AR_OPCODE_ADDI:
-        case AR_OPCODE_SUBI:
-        case AR_OPCODE_XORI:
-        case AR_OPCODE_ORI:
-        case AR_OPCODE_ANDI:
-        case AR_OPCODE_LSLI:
-        case AR_OPCODE_ASRI:
-        case AR_OPCODE_LSRI:
-        case AR_OPCODE_MULSI:
-        case AR_OPCODE_MULUI:
-        case AR_OPCODE_DIVSI:
-        case AR_OPCODE_DIVUI:
-        case AR_OPCODE_REMSI:
-        case AR_OPCODE_REMUI:
-        case AR_OPCODE_NOP:
-        case AR_OPCODE_MOVEINS:
-        case AR_OPCODE_MOVECYC:
-        case AR_OPCODE_MOVEFR:
-        case AR_OPCODE_MOVEIR:
-            if(instruction_id == 0) {
-                return AR_PROCESSOR_UNIT_ALU1;
-            } else if(instruction_id == 1) {
-                return AR_PROCESSOR_UNIT_ALU2;
-            } else if(instruction_id == 2) {
-                return AR_PROCESSOR_UNIT_ALU3;
-            } else if(instruction_id == 3) {
-                return AR_PROCESSOR_UNIT_ALU4;
-            }
-            break;
-        case AR_OPCODE_LDM:
-        case AR_OPCODE_STM:
-        case AR_OPCODE_LDC:
-        case AR_OPCODE_STC:
-        case AR_OPCODE_LDMI:
-        case AR_OPCODE_STMI:
-        case AR_OPCODE_LDCI:
-        case AR_OPCODE_STCI:
-        case AR_OPCODE_LDMV:
-        case AR_OPCODE_STMV:
-        case AR_OPCODE_LDCV:
-        case AR_OPCODE_STCV:
-        case AR_OPCODE_LDMVI:
-        case AR_OPCODE_STMVI:
-        case AR_OPCODE_LDCVI:
-        case AR_OPCODE_STCVI:
-        case AR_OPCODE_LDMIL:
-        case AR_OPCODE_STMIL:
-        case AR_OPCODE_LDCIL:
-        case AR_OPCODE_STCIL:
-        case AR_OPCODE_LDMVIL:
-        case AR_OPCODE_STMVIL:
-        case AR_OPCODE_LDCVIL:
-        case AR_OPCODE_STCVIL:
-        case AR_OPCODE_PREFETCH:
-        case AR_OPCODE_FLUSH:
-        case AR_OPCODE_PREFETCHI:
-        case AR_OPCODE_FLUSHI:
-            if (instruction_id == 0 || instruction_id == 2) {
-                return AR_PROCESSOR_UNIT_LSU1;
-            } else if (instruction_id == 1 || instruction_id == 3) {
-                return AR_PROCESSOR_UNIT_LSU2;
-            }
-            break;
-        case AR_OPCODE_CMP:
-        case AR_OPCODE_FCMP:
-        case AR_OPCODE_DCMP:
-        case AR_OPCODE_FCMPI:
-        case AR_OPCODE_DCMPI:
-        case AR_OPCODE_ENDP:
-        case AR_OPCODE_RET:
-        case AR_OPCODE_RETI:
-        case AR_OPCODE_INT:
-        case AR_OPCODE_CMPI:
-        case AR_OPCODE_BNE:
-        case AR_OPCODE_BEQ:
-        case AR_OPCODE_BL:
-        case AR_OPCODE_BLE:
-        case AR_OPCODE_BG:
-        case AR_OPCODE_BGE:
-        case AR_OPCODE_BLS:
-        case AR_OPCODE_BLES:
-        case AR_OPCODE_BGS:
-        case AR_OPCODE_BGES:
-        case AR_OPCODE_BRA:
-        case AR_OPCODE_JUMP:
-        case AR_OPCODE_JUMPBR:
-        case AR_OPCODE_CALL:
-        case AR_OPCODE_CALLBR:
-            if(instruction_id == 0) {
-                return AR_PROCESSOR_UNIT_CMP;
-            }
-            break;
-        case AR_OPCODE_FADD:
-        case AR_OPCODE_FSUB:
-        case AR_OPCODE_FMUL:
-        case AR_OPCODE_FMULADD:
-        case AR_OPCODE_VFADD:
-        case AR_OPCODE_VFSUB:
-        case AR_OPCODE_VFMUL:
-        case AR_OPCODE_VFMULADD:
-        case AR_OPCODE_VFADDS:
-        case AR_OPCODE_VFSUBS:
-        case AR_OPCODE_VFMULS:
-        case AR_OPCODE_VFMULADDS:
-        case AR_OPCODE_FMULSUB:
-        case AR_OPCODE_VFMULSUB:
-        case AR_OPCODE_VFMULSUBS:
-        case AR_OPCODE_VFSHUFFLE:
-        case AR_OPCODE_FMOVE:
-        case AR_OPCODE_VFMOVE:
-        case AR_OPCODE_FMOVEI:
-        case AR_OPCODE_VFMOVEI:
-        case AR_OPCODE_FNEG:
-        case AR_OPCODE_FABS:
-        case AR_OPCODE_VFNEG:
-        case AR_OPCODE_VFABS:
-        case AR_OPCODE_VFTOH:
-        case AR_OPCODE_VHTOF:
-        case AR_OPCODE_VFTOI:
-        case AR_OPCODE_VITOF:
-        case AR_OPCODE_VFTOD:
-        case AR_OPCODE_VDTOF:
-        case AR_OPCODE_FMIN:
-        case AR_OPCODE_FMAX:
-        case AR_OPCODE_FDIV:
-        case AR_OPCODE_FSQRT:
-        case AR_OPCODE_FATAN:
-        case AR_OPCODE_FATAN2:
-        case AR_OPCODE_FEXP:
-        case AR_OPCODE_FSUM:
-        case AR_OPCODE_FIPR:
-        case AR_OPCODE_FSIN:
-        case AR_OPCODE_DMOVEI:
-        case AR_OPCODE_DADD:
-        case AR_OPCODE_DSUB:
-        case AR_OPCODE_DMUL:
-        case AR_OPCODE_DABS:
-        case AR_OPCODE_DNEG:
-        case AR_OPCODE_DMIN:
-        case AR_OPCODE_DMAX:
-        case AR_OPCODE_DDIV:
-        case AR_OPCODE_DSQRT:
-        case AR_OPCODE_DSIN:
-            return AR_PROCESSOR_UNIT_VFPU;
-    }
-    return AR_PROCESSOR_UNIT_UNKNOWN;
-}
+                AR_OPCODE_FMULSUB, AR_OPCODE_VFTOD, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_VFMULSUB, AR_OPCODE_VDTOF, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_VFMULSUBS, AR_OPCODE_FMIN,AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_VFSHUFFLE, AR_OPCODE_FMAX,AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+        },
+        {
+                AR_OPCODE_LDDMA,   AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_SWT,
+                AR_OPCODE_STDMA,   AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_SWT,
+                AR_OPCODE_LDDMACL, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_SWT,
+                AR_OPCODE_STDMACL, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_SWT,
+
+                AR_OPCODE_DMAI,     AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_SWT,
+                AR_OPCODE_UNKNOWN,  AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_SWT,
+                AR_OPCODE_UNKNOWN,  AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_SWT,
+                AR_OPCODE_UNKNOWN,  AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_SWT,
+
+                AR_OPCODE_LDDMAI,   AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STDMAI,   AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_LDDMACLI, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STDMACLI, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+
+                AR_OPCODE_DMAII,    AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_UNKNOWN,  AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_UNKNOWN,  AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_WAIT,     AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+        },
+        {
+                AR_OPCODE_LDM, AR_OPCODE_LDMIL, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STM, AR_OPCODE_STMIL, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_LDC, AR_OPCODE_LDCIL, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STC, AR_OPCODE_STCIL, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+
+                AR_OPCODE_LDMV,AR_OPCODE_LDMVIL,AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STMV,AR_OPCODE_STMVIL,AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_LDCV,AR_OPCODE_LDCVIL,AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STCV, AR_OPCODE_STCVIL,AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+
+                AR_OPCODE_LDMI, AR_OPCODE_PREFETCHI, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STMI, AR_OPCODE_FLUSHI,AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_LDCI, AR_OPCODE_PREFETCH, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STCI,AR_OPCODE_FLUSH, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+
+                AR_OPCODE_LDMVI, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STMVI,AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_LDCVI, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STCVI, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+        },
+        {
+                AR_OPCODE_LDM, AR_OPCODE_LDMIL, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STM, AR_OPCODE_STMIL, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_LDC, AR_OPCODE_LDCIL, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STC, AR_OPCODE_STCIL, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+
+                AR_OPCODE_LDMV, AR_OPCODE_LDMVIL, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STMV, AR_OPCODE_STMVIL, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_LDCV, AR_OPCODE_LDCVIL, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STCV, AR_OPCODE_STCVIL, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+
+                AR_OPCODE_LDMI, AR_OPCODE_PREFETCHI, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STMI, AR_OPCODE_FLUSHI, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_LDCI, AR_OPCODE_PREFETCH, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STCI,AR_OPCODE_FLUSH, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+
+                AR_OPCODE_LDMVI, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STMVI,AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_LDCVI, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+                AR_OPCODE_STCVI, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+        },
+};
+
+enum ArOpcode instruction_decode_opcodes_swt[8][16] = {
+        {
+            AR_OPCODE_NOP, AR_OPCODE_NOP, AR_OPCODE_NOP, AR_OPCODE_NOP,
+            AR_OPCODE_NOP, AR_OPCODE_NOP, AR_OPCODE_NOP, AR_OPCODE_NOP,
+            AR_OPCODE_NOP, AR_OPCODE_NOP, AR_OPCODE_NOP, AR_OPCODE_NOP,
+            AR_OPCODE_NOP, AR_OPCODE_NOP, AR_OPCODE_NOP, AR_OPCODE_NOP,
+        },
+        {
+            AR_OPCODE_ADD, AR_OPCODE_SUB, AR_OPCODE_XOR, AR_OPCODE_OR,
+            AR_OPCODE_AND, AR_OPCODE_LSL, AR_OPCODE_ASR, AR_OPCODE_LSR,
+            AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+            AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+        },
+        {
+            AR_OPCODE_ADD, AR_OPCODE_SUB, AR_OPCODE_XOR, AR_OPCODE_OR,
+            AR_OPCODE_AND, AR_OPCODE_LSL, AR_OPCODE_ASR, AR_OPCODE_LSR,
+            AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+            AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+        },
+        {
+            AR_OPCODE_LDM, AR_OPCODE_STM, AR_OPCODE_LDC, AR_OPCODE_STC,
+            AR_OPCODE_LDMV, AR_OPCODE_STMV, AR_OPCODE_LDCV, AR_OPCODE_STCV,
+            AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+            AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+        },
+        {
+            AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+            AR_OPCODE_VFADD, AR_OPCODE_FSUB, AR_OPCODE_FMUL, AR_OPCODE_FMULADD,
+            AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+            AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+        },
+        {
+            AR_OPCODE_UNKNOWN, AR_OPCODE_VFMOVE, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN,
+            AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_VFNEG, AR_OPCODE_VFABS,
+            AR_OPCODE_VFTOH, AR_OPCODE_VHTOF, AR_OPCODE_VFTOI, AR_OPCODE_VITOF,
+            AR_OPCODE_VFTOD, AR_OPCODE_VDTOF, AR_OPCODE_FMIN, AR_OPCODE_FMAX,
+        },
+        {
+            AR_OPCODE_UNKNOWN, AR_OPCODE_DADD, AR_OPCODE_DSUB, AR_OPCODE_DMUL,
+            AR_OPCODE_DABS, AR_OPCODE_DNEG, AR_OPCODE_DMIN, AR_OPCODE_DMAX,
+            AR_OPCODE_DDIV, AR_OPCODE_DSQRT, AR_OPCODE_DSIN, AR_OPCODE_UNKNOWN,
+            AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN, AR_OPCODE_UNKNOWN
+        }
+};
 
 struct ArInstruction_T instruction_decode(uint32_t raw, uint8_t instruction_id) {
     struct ArInstruction_T instruction;
     instruction.unit = AR_PROCESSOR_UNIT_UNKNOWN;
-    instruction.parameters.size  = BITS(raw, 8, 2);
-    instruction.parameters.reg_a = BITS(raw, 26, 5);
-    instruction.parameters.reg_b = BITS(raw, 20, 5);
+    instruction.swt = 0;
+    instruction.parameters.size = BITS(raw, 8, 2);
+    instruction.parameters.id_1 = BITS(raw, 8, 2);
+    instruction.parameters.id_2 = BITS(raw, 10, 2);
+    instruction.parameters.small_immediate = BITS(raw, 10, 9);
+    instruction.parameters.medium_immediate = BITS(raw, 10, 16);
+    instruction.parameters.long_immediate = (BITS(raw, 4, 4) << 16) | BITS(raw, 10, 16);
     instruction.parameters.reg_c = BITS(raw, 14, 5);
-    instruction.parameters.id_1  = BITS(raw, 8, 2);
-    instruction.parameters.id_2  = BITS(raw, 10, 2);
-    instruction_decode_functions[BITS(raw, 0, 4)](raw, &instruction, instruction_id);
+    instruction.parameters.reg_b = BITS(raw, 20, 5);
+    instruction.parameters.reg_a = BITS(raw, 26, 5);
+
+    instruction.unit = instruction_decode_unit[BITS(raw, 0, 2)][instruction_id];
+    instruction.opcode = instruction_decode_opcodes[instruction.unit][BITS(raw, 2, 6)];
+
+    if(instruction.opcode == AR_OPCODE_SWT) {
+        instruction.swt = 1;
+        instruction.unit = instruction_decode_unit_swt[BITS(raw, 4, 4)];
+        instruction.opcode = instruction_decode_opcodes_swt[BITS(raw, 4, 4)][BITS(raw, 10, 4)];
+    }
+
     return instruction;
 }
 
-void print_instruction(struct ArInstruction_T * instruction) {
+void register_print(uint8_t reg) {
+    printf("r%hhu", reg);
+}
+
+void vregister_print(uint8_t reg) {
+    printf("v%hhu", reg);
+}
+
+void viregister_print(uint8_t reg, uint8_t id) {
+    printf("v%hhu.", reg);
+    switch (id) {
+        case 0:
+            printf("x");
+            break;
+        case 1:
+            printf("y");
+            break;
+        case 2:
+            printf("z");
+            break;
+        case 3:
+            printf("t");
+            break;
+    }
+}
+
+void unit_print(enum ArUnit unit) {
+    switch (unit) {
+        case AR_PROCESSOR_UNIT_ALU1:
+            printf("ALU1");
+            break;
+        case AR_PROCESSOR_UNIT_ALU2:
+            printf("ALU2");
+            break;
+        case AR_PROCESSOR_UNIT_ALU3:
+            printf("ALU3");
+            break;
+        case AR_PROCESSOR_UNIT_ALU4:
+            printf("ALU4");
+            break;
+        case AR_PROCESSOR_UNIT_CMP:
+            printf("CMP");
+            break;
+        case AR_PROCESSOR_UNIT_VFPU:
+            printf("VFPU");
+            break;
+        case AR_PROCESSOR_UNIT_DMA:
+            printf("DMA");
+            break;
+        case AR_PROCESSOR_UNIT_LSU1:
+            printf("LSU1");
+            break;
+        case AR_PROCESSOR_UNIT_LSU2:
+            printf("LSU2");
+            break;
+        case AR_PROCESSOR_UNIT_UNKNOWN:
+            printf("UNKNOWN");
+            break;
+    }
+}
+
+void instruction_print(struct ArInstruction_T *instruction) {
     switch (instruction->opcode) {
         case AR_OPCODE_UNKNOWN:
-            printf("AR_OPCODE_UNKNOWN");
+            printf("UNKNOWN(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LDDMA:
-            printf("AR_OPCODE_LDDMA");
+            printf("LDDMA(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_STDMA:
-            printf("AR_OPCODE_STDMA");
+            printf("STDMA(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LDDMAR:
-            printf("AR_OPCODE_LDDMAR");
+            printf("LDDMAR(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_STDMAR:
-            printf("AR_OPCODE_STDMAR");
+            printf("STDMAR(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DMAIR:
-            printf("AR_OPCODE_DMAIR");
+            printf("DMAIR(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LDDMAL:
-            printf("AR_OPCODE_LDDMAL");
+            printf("LDDMAL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_STDMAL:
-            printf("AR_OPCODE_STDMAL");
+            printf("STDMAL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_CLEARC:
-            printf("AR_OPCODE_CLEARC");
+            printf("CLEARC(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_WAIT:
-            printf("AR_OPCODE_WAIT");
+            printf("WAIT(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LDM:
-            printf("AR_OPCODE_LDM");
+            printf("LDM(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LDMI:
-            printf("AR_OPCODE_LDMI");
+            printf("LDMI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_STM:
-            printf("AR_OPCODE_STM");
+            printf("STM(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_STMI:
-            printf("AR_OPCODE_STMI");
+            printf("STMI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LDC:
-            printf("AR_OPCODE_LDC");
+            printf("LDC(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LDCI:
-            printf("AR_OPCODE_LDCI");
+            printf("LDCI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_STC:
-            printf("AR_OPCODE_STC");
+            printf("STC(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_STCI:
-            printf("AR_OPCODE_STCI");
+            printf("STCI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_IN:
-            printf("AR_OPCODE_IN");
+            printf("IN(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_OUT:
-            printf("AR_OPCODE_OUT");
+            printf("OUT(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_OUTI:
-            printf("AR_OPCODE_OUTI");
+            printf("OUTI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LDMV:
-            printf("AR_OPCODE_LDMV");
+            printf("LDMV(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LDMVI:
-            printf("AR_OPCODE_LDMVI");
+            printf("LDMVI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LDCV:
-            printf("AR_OPCODE_LDCV");
+            printf("LDCV(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LDCVI:
-            printf("AR_OPCODE_LDCVI");
+            printf("LDCVI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_STMV:
-            printf("AR_OPCODE_STMV");
+            printf("STMV(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_STMVI:
-            printf("AR_OPCODE_STMVI");
+            printf("STMVI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_STCV:
-            printf("AR_OPCODE_STCV");
+            printf("STCV(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_STCVI:
-            printf("AR_OPCODE_STCVI");
+            printf("STCVI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LDMIL:
-            printf("AR_OPCODE_LDMIL");
+            printf("LDMIL(");
+            unit_print(instruction->unit);
+            printf(", ");
+            register_print(instruction->parameters.reg_a);
+            printf(", %hu", instruction->parameters.medium_immediate);
+            printf(")");
             break;
         case AR_OPCODE_STMIL:
-            printf("AR_OPCODE_STMIL");
+            printf("STMIL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LDCIL:
-            printf("AR_OPCODE_LDCIL");
+            printf("LDCIL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_STCIL:
-            printf("AR_OPCODE_STCIL");
+            printf("STCIL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_PREFETCHI:
-            printf("AR_OPCODE_PREFETCHI");
+            printf("PREFETCHI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FLUSHI:
-            printf("AR_OPCODE_FLUSHI");
+            printf("FLUSHI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_PREFETCH:
-            printf("AR_OPCODE_PREFETCH");
+            printf("PREFETCH(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FLUSH:
-            printf("AR_OPCODE_FLUSH");
+            printf("FLUSH(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LDMVIL:
-            printf("AR_OPCODE_LDMVIL");
+            printf("LDMVIL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_STMVIL:
-            printf("AR_OPCODE_STMVIL");
+            printf("STMVIL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LDCVIL:
-            printf("AR_OPCODE_LDCVIL");
+            printf("LDCVIL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_STCVIL:
-            printf("AR_OPCODE_STCVIL");
+            printf("STCVIL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_NOP:
-            printf("AR_OPCODE_NOP");
+            printf("NOP(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_MOVEI:
-            printf("AR_OPCODE_MOVEI");
+            printf("MOVEI(");
+            unit_print(instruction->unit);
+            printf(", ");
+            register_print(instruction->parameters.reg_a);
+            printf(", %u", instruction->parameters.long_immediate);
+            printf(")");
             break;
         case AR_OPCODE_MOVEINS:
-            printf("AR_OPCODE_MOVEINS");
+            printf("MOVEINS(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_MOVEFR:
-            printf("AR_OPCODE_MOVEFR");
+            printf("MOVEFR(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_MOVEIR:
-            printf("AR_OPCODE_MOVEIR");
+            printf("MOVEIR(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_MOVECYC:
-            printf("AR_OPCODE_MOVECYC");
+            printf("MOVECYC(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_MOVELRL:
-            printf("AR_OPCODE_MOVELRL");
+            printf("MOVELRL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_MOVELRS:
-            printf("AR_OPCODE_MOVELRS");
+            printf("MOVELRS(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_MOVEBR:
-            printf("AR_OPCODE_MOVEBR");
+            printf("MOVEBR(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_ADD:
-            printf("AR_OPCODE_ADD");
+            printf("ADD(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_ADDI:
-            printf("AR_OPCODE_ADDI");
+            printf("ADDI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_ADDQ:
-            printf("AR_OPCODE_ADDQ");
+            printf("ADDQ(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_SUB:
-            printf("AR_OPCODE_SUB");
+            printf("SUB(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_SUBI:
-            printf("AR_OPCODE_SUBI");
+            printf("SUBI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_SUBQ:
-            printf("AR_OPCODE_SUBQ");
+            printf("SUBQ(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_MULS:
-            printf("AR_OPCODE_MULS");
+            printf("MULS(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_MULSI:
-            printf("AR_OPCODE_MULSI");
+            printf("MULSI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_MULSQ:
-            printf("AR_OPCODE_MULSQ");
+            printf("MULSQ(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_MULU:
-            printf("AR_OPCODE_MULU");
+            printf("MULU(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_MULUI:
-            printf("AR_OPCODE_MULUI");
+            printf("MULUI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_MULUQ:
-            printf("AR_OPCODE_MULUQ");
+            printf("MULUQ(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DIVS:
-            printf("AR_OPCODE_DIVS");
+            printf("DIVS(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DIVSI:
-            printf("AR_OPCODE_DIVSI");
+            printf("DIVSI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DIVSQ:
-            printf("AR_OPCODE_DIVSQ");
+            printf("DIVSQ(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DIVU:
-            printf("AR_OPCODE_DIVU");
+            printf("DIVU(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DIVUI:
-            printf("AR_OPCODE_DIVUI");
+            printf("DIVUI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DIVUQ:
-            printf("AR_OPCODE_DIVUQ");
+            printf("DIVUQ(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_AND:
-            printf("AR_OPCODE_AND");
+            printf("AND(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_ANDI:
-            printf("AR_OPCODE_ANDI");
+            printf("ANDI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_ANDQ:
-            printf("AR_OPCODE_ANDQ");
+            printf("ANDQ(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_OR:
-            printf("AR_OPCODE_OR");
+            printf("OR(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_ORI:
-            printf("AR_OPCODE_ORI");
+            printf("ORI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_ORQ:
-            printf("AR_OPCODE_ORQ");
+            printf("ORQ(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_XOR:
-            printf("AR_OPCODE_XOR");
+            printf("XOR(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_XORI:
-            printf("AR_OPCODE_XORI");
+            printf("XORI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_XORQ:
-            printf("AR_OPCODE_XORQ");
+            printf("XORQ(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_ASL:
-            printf("AR_OPCODE_ASL");
+            printf("ASL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_ASLI:
-            printf("AR_OPCODE_ASLI");
+            printf("ASLI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_ASLQ:
-            printf("AR_OPCODE_ASLQ");
+            printf("ASLQ(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LSL:
-            printf("AR_OPCODE_LSL");
+            printf("LSL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LSLI:
-            printf("AR_OPCODE_LSLI");
+            printf("LSLI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LSLQ:
-            printf("AR_OPCODE_LSLQ");
+            printf("LSLQ(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_ASR:
-            printf("AR_OPCODE_ASR");
+            printf("ASR(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_ASRI:
-            printf("AR_OPCODE_ASRI");
+            printf("ASRI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_ASRQ:
-            printf("AR_OPCODE_ASRQ");
+            printf("ASRQ(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LSR:
-            printf("AR_OPCODE_LSR");
+            printf("LSR(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LSRI:
-            printf("AR_OPCODE_LSRI");
+            printf("LSRI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_LSRQ:
-            printf("AR_OPCODE_LSRQ");
+            printf("LSRQ(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_REMS:
-            printf("AR_OPCODE_REMS");
+            printf("REMS(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_REMU:
-            printf("AR_OPCODE_REMU");
+            printf("REMU(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_REMSI:
-            printf("AR_OPCODE_REMSI");
+            printf("REMSI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_REMUI:
-            printf("AR_OPCODE_REMUI");
+            printf("REMUI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_CMP:
-            printf("AR_OPCODE_CMP");
+            printf("CMP(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_CMPI:
-            printf("AR_OPCODE_CMPI");
+            printf("CMPI(");
+            unit_print(instruction->unit);
+            printf(", ");
+            register_print(instruction->parameters.reg_a);
+            printf(", %u", instruction->parameters.long_immediate);
+            printf(")");
             break;
         case AR_OPCODE_PCMP:
-            printf("AR_OPCODE_PCMP");
+            printf("PCMP(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_PCMPI:
-            printf("AR_OPCODE_PCMPI");
+            printf("PCMPI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FCMP:
-            printf("AR_OPCODE_FCMP");
+            printf("FCMP(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DCMP:
-            printf("AR_OPCODE_DCMP");
+            printf("DCMP(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FCMPI:
-            printf("AR_OPCODE_FCMPI");
+            printf("FCMPI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DCMPI:
-            printf("AR_OPCODE_DCMPI");
+            printf("DCMPI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_BNE:
-            printf("AR_OPCODE_BNE");
+            printf("BNE(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_BEQ:
-            printf("AR_OPCODE_BEQ");
+            printf("BEQ(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_BL:
-            printf("AR_OPCODE_BL");
+            printf("BL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_BLE:
-            printf("AR_OPCODE_BLE");
+            printf("BLE(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_BG:
-            printf("AR_OPCODE_BG");
+            printf("BG(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_BGE:
-            printf("AR_OPCODE_BGE");
+            printf("BGE(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_BLS:
-            printf("AR_OPCODE_BLS");
+            printf("BLS(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_BLES:
-            printf("AR_OPCODE_BLES");
+            printf("BLES(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_BGS:
-            printf("AR_OPCODE_BGS");
+            printf("BGS(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_BGES:
-            printf("AR_OPCODE_BGES");
+            printf("BGES(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_BRA:
-            printf("AR_OPCODE_BRA");
+            printf("BRA(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_JMP:
-            printf("AR_OPCODE_JMP");
+            printf("JMP(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_JUMP:
-            printf("AR_OPCODE_JUMP");
+            printf("JUMP(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_JUMPBR:
-            printf("AR_OPCODE_JUMPBR");
+            printf("JUMPBR(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_CALL:
-            printf("AR_OPCODE_CALL");
+            printf("CALL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_CALLBR:
-            printf("AR_OPCODE_CALLBR");
+            printf("CALLBR(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_JMPR:
-            printf("AR_OPCODE_JMPR");
+            printf("JMPR(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_CALLR:
-            printf("AR_OPCODE_CALLR");
+            printf("CALLR(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_SWT:
-            printf("AR_OPCODE_SWT");
+            printf("SWT(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_ENDP:
-            printf("AR_OPCODE_ENDP");
+            printf("ENDP(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_RET:
-            printf("AR_OPCODE_RET");
+            printf("RET(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_INT:
-            printf("AR_OPCODE_INT");
+            printf("INT(");
+            unit_print(instruction->unit);
+            printf(", ");
+            printf("%hu", instruction->parameters.medium_immediate);
+            printf(")");
             break;
         case AR_OPCODE_RETI:
-            printf("AR_OPCODE_RETI");
+            printf("RETI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_MOVE:
-            printf("AR_OPCODE_MOVE");
+            printf("MOVE(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FADD:
-            printf("AR_OPCODE_FADD(%hhu, %hhu_%hhu, %hhu_%hhu)", instruction->parameters.reg_a, instruction->parameters.reg_b, instruction->parameters.id_1, instruction->parameters.reg_c, instruction->parameters.id_2);
+            printf("FADD(");
+            unit_print(instruction->unit);
+            printf(", ");
+            vregister_print(instruction->parameters.reg_a);
+            printf(", ");
+            viregister_print(instruction->parameters.reg_b, instruction->parameters.id_1);
+            printf(", ");
+            viregister_print(instruction->parameters.reg_c, instruction->parameters.id_2);
+            printf(")");
             break;
         case AR_OPCODE_FSUB:
-            printf("AR_OPCODE_FSUB");
+            printf("FSUB(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FMUL:
-            printf("AR_OPCODE_FMUL");
+            printf("FMUL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FMULADD:
-            printf("AR_OPCODE_FMULADD");
+            printf("FMULADD(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFADD:
-            printf("AR_OPCODE_VFADD");
+            printf("VFADD(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFSUB:
-            printf("AR_OPCODE_VFSUB");
+            printf("VFSUB(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFMUL:
-            printf("AR_OPCODE_VFMUL");
+            printf("VFMUL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFMULADD:
-            printf("AR_OPCODE_VFMULADD");
+            printf("VFMULADD(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFADDS:
-            printf("AR_OPCODE_VFADDS");
+            printf("VFADDS(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFSUBS:
-            printf("AR_OPCODE_VFSUBS");
+            printf("VFSUBS(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFMULS:
-            printf("AR_OPCODE_VFMULS");
+            printf("VFMULS(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFMULADDS:
-            printf("AR_OPCODE_VFMULADDS");
+            printf("VFMULADDS(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FMULSUB:
-            printf("AR_OPCODE_FMULSUB");
+            printf("FMULSUB(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFMULSUB:
-            printf("AR_OPCODE_VFMULSUB");
+            printf("VFMULSUB(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFMULSUBS:
-            printf("AR_OPCODE_VFMULSUBS");
+            printf("VFMULSUBS(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFSHUFFLE:
-            printf("AR_OPCODE_VFSHUFFLE");
+            printf("VFSHUFFLE(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FMOVE:
-            printf("AR_OPCODE_FMOVE");
+            printf("FMOVE(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFMOVE:
-            printf("AR_OPCODE_VFMOVE");
+            printf("VFMOVE(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FMOVEI:
-            printf("AR_OPCODE_FMOVEI(%hhu, %u)", instruction->parameters.reg_a, instruction->parameters.immediate);
+            printf("VFMOVE(");
+            unit_print(instruction->unit);
+            printf(", ");
+            register_print(instruction->parameters.reg_a);
+            printf(", %hu", instruction->parameters.small_immediate);
+            printf(")");
             break;
         case AR_OPCODE_VFMOVEI:
-            printf("AR_OPCODE_VFMOVEI");
+            printf("VFMOVEI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FNEG:
-            printf("AR_OPCODE_FNEG");
+            printf("FNEG(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FABS:
-            printf("AR_OPCODE_FABS");
+            printf("FABS(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFNEG:
-            printf("AR_OPCODE_VFNEG");
+            printf("VFNEG(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFABS:
-            printf("AR_OPCODE_VFABS");
+            printf("VFABS(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFTOH:
-            printf("AR_OPCODE_VFTOH");
+            printf("VFTOH(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VHTOF:
-            printf("AR_OPCODE_VHTOF");
+            printf("VHTOF(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFTOI:
-            printf("AR_OPCODE_VFTOI");
+            printf("VFTOI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VITOF:
-            printf("AR_OPCODE_VITOF");
+            printf("VITOF(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VFTOD:
-            printf("AR_OPCODE_VFTOD");
+            printf("VFTOD(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_VDTOF:
-            printf("AR_OPCODE_VDTOF");
+            printf("VDTOF(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FMIN:
-            printf("AR_OPCODE_FMIN");
+            printf("FMIN(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FMAX:
-            printf("AR_OPCODE_FMAX");
+            printf("FMAX(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FDIV:
-            printf("AR_OPCODE_FDIV");
+            printf("FDIV(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FSQRT:
-            printf("AR_OPCODE_FSQRT");
+            printf("FSQRT(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FATAN:
-            printf("AR_OPCODE_FATAN");
+            printf("FATAN(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FATAN2:
             break;
         case AR_OPCODE_FEXP:
-            printf("AR_OPCODE_FEXP");
+            printf("FEXP(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FSUM:
-            printf("AR_OPCODE_FSUM");
+            printf("FSUM(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FIPR:
-            printf("AR_OPCODE_FIPR");
+            printf("FIPR(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_FSIN:
-            printf("AR_OPCODE_FSIN");
+            printf("FSIN(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DMOVEI:
-            printf("AR_OPCODE_DMOVEI");
+            printf("DMOVEI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DADD:
-            printf("AR_OPCODE_DADD");
+            printf("DADD(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DSUB:
-            printf("AR_OPCODE_DSUB");
+            printf("DSUB(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DMUL:
-            printf("AR_OPCODE_DMUL");
+            printf("DMUL(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DABS:
-            printf("AR_OPCODE_DABS");
+            printf("DABS(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DNEG:
-            printf("AR_OPCODE_DNEG");
+            printf("DNEG(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DMIN:
-            printf("AR_OPCODE_DMIN");
+            printf("DMIN(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DMAX:
-            printf("AR_OPCODE_DMAX");
+            printf("DMAX(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DDIV:
-            printf("AR_OPCODE_DDIV");
+            printf("DDIV(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DSQRT:
-            printf("AR_OPCODE_DSQRT");
+            printf("DSQRT(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
         case AR_OPCODE_DSIN:
-            printf("AR_OPCODE_DSIN");
+            printf("DSIN(");
+            unit_print(instruction->unit);
+            printf(")");
+            break;
+        case AR_OPCODE_LDDMACL:
+            printf("LDDMACL(");
+            unit_print(instruction->unit);
+            printf(")");
+            break;
+        case AR_OPCODE_STDMACL:
+            printf("STDMACL(");
+            unit_print(instruction->unit);
+            printf(")");
+            break;
+        case AR_OPCODE_DMAI:
+            printf("DMAI(");
+            unit_print(instruction->unit);
+            printf(")");
+            break;
+        case AR_OPCODE_LDDMAI:
+            printf("LDDMAI(");
+            unit_print(instruction->unit);
+            printf(", ");
+            register_print(instruction->parameters.reg_a);
+            printf(", ");
+            register_print(instruction->parameters.reg_b);
+            printf(", %hu", instruction->parameters.small_immediate);
+            printf(")");
+            break;
+        case AR_OPCODE_STDMAI:
+            printf("STDMAI(");
+            unit_print(instruction->unit);
+            printf(")");
+            break;
+        case AR_OPCODE_LDDMACLI:
+            printf("LDDMACLI(");
+            unit_print(instruction->unit);
+            printf(")");
+            break;
+        case AR_OPCODE_DMAII:
+            printf("DMAII(");
+            unit_print(instruction->unit);
+            printf(")");
+            break;
+        case AR_OPCODE_STDMACLI:
+            printf("STDMACLI(");
+            unit_print(instruction->unit);
+            printf(")");
             break;
     }
 }

@@ -39,10 +39,16 @@ typedef enum ArStructureType
 
 typedef enum ArOpcode
 {
-    AR_OPCODE_UNKNOWN,
-
-    //AGU
+    AR_OPCODE_UNKNOWN = 0,
     AR_OPCODE_LDDMA,
+    AR_OPCODE_LDDMACL,
+    AR_OPCODE_STDMACL,
+    AR_OPCODE_DMAI,
+    AR_OPCODE_LDDMAI,
+    AR_OPCODE_STDMAI,
+    AR_OPCODE_LDDMACLI,
+    AR_OPCODE_DMAII,
+    AR_OPCODE_STDMACLI,
     AR_OPCODE_STDMA,
     AR_OPCODE_LDDMAR,
     AR_OPCODE_STDMAR,
@@ -51,8 +57,6 @@ typedef enum ArOpcode
     AR_OPCODE_STDMAL,
     AR_OPCODE_CLEARC,
     AR_OPCODE_WAIT,
-
-    //LSU
     AR_OPCODE_LDM,
     AR_OPCODE_LDMI,
     AR_OPCODE_STM,
@@ -84,8 +88,6 @@ typedef enum ArOpcode
     AR_OPCODE_STMVIL,
     AR_OPCODE_LDCVIL,
     AR_OPCODE_STCVIL,
-
-    //ALU
     AR_OPCODE_NOP,
     AR_OPCODE_MOVEI,
     AR_OPCODE_MOVEINS,
@@ -138,8 +140,6 @@ typedef enum ArOpcode
     AR_OPCODE_REMU,
     AR_OPCODE_REMSI,
     AR_OPCODE_REMUI,
-
-    //CMP
     AR_OPCODE_CMP,
     AR_OPCODE_CMPI,
     AR_OPCODE_PCMP,
@@ -148,8 +148,6 @@ typedef enum ArOpcode
     AR_OPCODE_DCMP,
     AR_OPCODE_FCMPI,
     AR_OPCODE_DCMPI,
-
-    //BRU
     AR_OPCODE_BNE,
     AR_OPCODE_BEQ,
     AR_OPCODE_BL,
@@ -173,17 +171,7 @@ typedef enum ArOpcode
     AR_OPCODE_RET,
     AR_OPCODE_INT,
     AR_OPCODE_RETI,
-
-    //VPU
-    //AR_OPCODE_PADD,
-    //AR_OPCODE_PSUB,
-    //AR_OPCODE_PMUL,
-    //AR_OPCODE_PMULADD,
-
-    //Fake instructions
     AR_OPCODE_MOVE,
-
-    // VFPU
     AR_OPCODE_FADD,
     AR_OPCODE_FSUB,
     AR_OPCODE_FMUL,
@@ -271,7 +259,7 @@ typedef struct ArPhysicalMemoryCreateInfo
 typedef struct ArOperation
 {
     ArOpcode op; //< The opcode
-    uint32_t operands[AR_OPERATION_MAX_OPERANDS]; //< Either register or immediate values
+    uint32_t operands[AR_OPERATION_MAX_OPERANDS]; //< Either register or small_immediate values
     uint32_t size; //< The size parameter, real meaning depend on instruction
     uint32_t data; //< Additionnal data, real meaning depend on instruction
 } ArOperation;
