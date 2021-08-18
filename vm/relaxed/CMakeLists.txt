@@ -22,10 +22,12 @@ install(TARGETS altair_vm_relaxed
         CONFIGURATIONS Debug
         RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/../test/debug
         ARCHIVE DESTINATION ${PROJECT_SOURCE_DIR}/../test/debug
+        LIBRARY DESTINATION ${PROJECT_SOURCE_DIR}/../test/debug
         COMPONENT library)
 
 install(TARGETS altair_vm_relaxed
         CONFIGURATIONS Release
         RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/../test/release
         ARCHIVE DESTINATION ${PROJECT_SOURCE_DIR}/../test/release
+        LIBRARY DESTINATION ${PROJECT_SOURCE_DIR}/../test/release
         COMPONENT library)

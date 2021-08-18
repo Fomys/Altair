@@ -23,6 +23,10 @@ typedef enum ArResult
     AR_ERROR_TOO_MANY_OBJECTS = -3,
     AR_ERROR_MEMORY_OUT_OF_RANGE = -4,
     AR_ERROR_PHYSICAL_MEMORY_OUT_OF_RANGE = -5,
+    AR_ERROR_RAM_ALREADY_INITIALIZED = -6,
+    AR_ERROR_ROM_ALREADY_INITIALIZED = -7,
+    AR_ERROR_UNKNOWN_MEMORY_ROLE = -8,
+    AR_TOO_MANY_PROCESSORS = -9,
     AR_ERROR_HOST_OUT_OF_MEMORY = -256,
 } ArResult;
 
@@ -193,7 +197,6 @@ typedef struct ArOperation
 #define AR_PROCESSOR_DSRAM_SIZE     (128u * 1024u)
 #define AR_PROCESSOR_ISRAM_SIZE     (128u * 1024u)
 #define AR_PROCESSOR_CACHE_SIZE     (32u * 1024u)
-#define AR_PROCESSOR_IOSRAM_SIZE    (256u)
 #define AR_PROCESSOR_IREG_COUNT     (64u)
 #define AR_PROCESSOR_VREG_COUNT     (64u)
 #define AR_PROCESSOR_MAX_OPERATIONS (4u)
@@ -203,7 +206,6 @@ typedef struct ArProcessorMemoryInfo
     uint8_t*  dsram;
     uint8_t*  isram;
     uint8_t*  cache;
-    uint8_t*  iosram;
     uint64_t* ireg;
     uint64_t* vreg;
 } ArProcessorMemoryInfo;

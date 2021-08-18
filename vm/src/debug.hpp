@@ -441,7 +441,7 @@ inline void run_debugger(ar::processor& processor)
 
         processor.direct_memory_access();
 
-        run_io(memory_info.iosram);
+        //run_io(memory_info.iosram);
     }
 }
 
