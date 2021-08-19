@@ -30,7 +30,6 @@ enum ArUnit {
     AR_PROCESSOR_UNIT_UNKNOWN,
 };
 
-
 typedef struct ArInstruction_T {
     enum ArOpcode opcode;
     enum ArUnit unit;

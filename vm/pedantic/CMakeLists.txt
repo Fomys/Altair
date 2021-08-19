@@ -14,7 +14,7 @@ add_library(altair_vm_pedantic SHARED
         src/virtual_machine.c
         src/physical_memory.c
         src/processor.c
-        src/instruction.c)
+        src/instruction.c src/execute_opcode.h src/execute_opcode.c)
 
 set_target_properties(altair_vm_pedantic PROPERTIES PREFIX "")
 target_link_libraries(altair_vm_pedantic PRIVATE altair_vm_base)

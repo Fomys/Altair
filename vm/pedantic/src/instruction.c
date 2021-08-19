@@ -264,12 +264,12 @@ struct ArInstruction_T instruction_decode(uint32_t raw, uint8_t instruction_id) 
     instruction.parameters.size = BITS(raw, 8, 2);
     instruction.parameters.id_1 = BITS(raw, 8, 2);
     instruction.parameters.id_2 = BITS(raw, 10, 2);
-    instruction.parameters.small_immediate = BITS(raw, 10, 9);
+    instruction.parameters.small_immediate = BITS(raw, 10, 10);
     instruction.parameters.medium_immediate = BITS(raw, 10, 16);
     instruction.parameters.long_immediate = (BITS(raw, 4, 4) << 16) | BITS(raw, 10, 16);
-    instruction.parameters.reg_c = BITS(raw, 14, 5);
-    instruction.parameters.reg_b = BITS(raw, 20, 5);
-    instruction.parameters.reg_a = BITS(raw, 26, 5);
+    instruction.parameters.reg_c = BITS(raw, 14, 6);
+    instruction.parameters.reg_b = BITS(raw, 20, 6);
+    instruction.parameters.reg_a = BITS(raw, 26, 6);
 
     instruction.unit = instruction_decode_unit[BITS(raw, 0, 2)][instruction_id];
     instruction.opcode = instruction_decode_opcodes[instruction.unit][BITS(raw, 2, 6)];
@@ -284,7 +284,7 @@ struct ArInstruction_T instruction_decode(uint32_t raw, uint8_t instruction_id) 
 }
 
 void register_print(uint8_t reg) {
-    printf("r%hhu", reg);
+    printf("r%02hhu", reg);
 }
 
 void vregister_print(uint8_t reg) {
@@ -605,6 +605,13 @@ void instruction_print(struct ArInstruction_T *instruction) {
         case AR_OPCODE_ADD:
             printf("ADD(");
             unit_print(instruction->unit);
+            printf(", ");
+            register_print(instruction->parameters.reg_a);
+            printf(", ");
+            register_print(instruction->parameters.reg_b);
+            printf(", ");
+            register_print(instruction->parameters.reg_c);
+            printf(", %hhu", instruction->parameters.size);
             printf(")");
             break;
         case AR_OPCODE_ADDI:
@@ -1079,7 +1086,7 @@ void instruction_print(struct ArInstruction_T *instruction) {
             printf(")");
             break;
         case AR_OPCODE_FMOVEI:
-            printf("VFMOVE(");
+            printf("VFMOVEI(");
             unit_print(instruction->unit);
             printf(", ");
             register_print(instruction->parameters.reg_a);
